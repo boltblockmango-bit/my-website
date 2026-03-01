@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SAFIRECORD</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary-color: #FF6B6B; --background-color: #121212; --card-background: #1e1e1e;
+            --border-color: #444; --text-color: #e0e0e0; --text-secondary-color: #aaa;
+            --rate-limit-color: #e74c3c; --correct-color: #2ecc71; --incorrect-color: #e74c3c;
+            --glow-color: rgba(255, 107, 107, 0.4);
+        }
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--background-color); color: var(--text-color); display: flex;
+            justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 1rem;
+            overflow: hidden;
+        }
+        #snow-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: -1; }
+        .snowflake { position: absolute; background: white; border-radius: 50%; opacity: 0.6; animation: snowfall linear infinite; }
+        @keyframes snowfall { 0% { transform: translateY(-10vh) translateX(0); } 100% { transform: translateY(110vh) translateX(2vw); } }
+        .card {
+            background-color: var(--card-background); padding: 1.5rem 2rem; border-radius: 12px;
+            border: 2px solid var(--primary-color);
+            box-shadow: 0 0 20px var(--glow-color), 0 4px 20px rgba(0, 0, 0, 0.5);
+            width: 100%; max-width: 550px; display: flex; flex-direction: column; gap: 1rem;
+        }
+        h1, h2 { color: var(--primary-color); text-align: center; margin: 0; text-shadow: 0 0 8px var(--glow-color); }
+        label { font-weight: 600; color: var(--text-secondary-color); font-size: 0.9em; }
+        input, textarea {
+            width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 1rem;
+            background-color: #2a2a2a; color: var(--text-color); transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        input:focus, textarea:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.2); }
+        button { padding: 12px 20px; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; border: none; transition: all 0.2s ease-in-out; }
+        button:active { transform: scale(0.98); }
+        .primary-button { background-color: var(--primary-color); color: white; width: 100%; }
+        .primary-button:hover { background-color: #e55a5a; box-shadow: 0 0 10px var(--glow-color); }
+        .secondary-button { background-color: #444; color: var(--text-secondary-color); border: 1px solid #555; }
+        .secondary-button:hover { background-color: #555; }
+        .app-header { display: flex; justify-content: space-between; align-items: center; padding: 0 0.5rem; }
+        .tab-buttons { display: flex; flex-wrap: wrap; border-bottom: 2px solid var(--border-color); margin-bottom: 1.5rem; }
+        .tab-button {
+            flex-grow: 1; padding: 10px; background-color: transparent; color: var(--text-secondary-color);
+            border: none; border-bottom: 3px solid transparent; cursor: pointer; font-weight: 600;
+            font-size: 0.8em; white-space: nowrap; transition: color 0.2s, border-color 0.2s, text-shadow 0.2s;
+        }
+        .tab-button:hover { color: var(--text-color); }
+        .tab-button.active { color: var(--primary-color); border-bottom-color: var(--primary-color); text-shadow: 0 0 5px var(--glow-color); }
+        .tab-content { padding-top: 0; }
+        .tab-pane { display: none; flex-direction: column; gap: 1.5rem; }
+        .tab-pane.active { display: flex; }
+        .slider-container { display: flex; flex-direction: column; gap: 0.5rem; }
+        input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 8px; background: #333; outline: none; border-radius: 4px; }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 20px; height: 20px; background: var(--primary-color); cursor: pointer; transition: box-shadow 0.2s; }
+        input[type="range"]:hover::-webkit-slider-thumb { box-shadow: 0 0 8px var(--glow-color); }
+        .flex-row { display: flex; gap: 1rem; align-items: center; }
+        .button-group { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        fieldset { border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem; display: flex; flex-direction: column; gap: 1.25rem; }
+        legend { padding: 0 0.5em; font-weight: 600; color: var(--text-secondary-color); }
+        .status-box, #game-prompt-display, #game-results-area { display: flex; flex-direction: row; justify-content: center; align-items: center; padding: 12px; background-color: #2a2a2a; border-radius: 6px; border: 1px solid var(--border-color); }
+        #game-prompt-display { font-family: monospace; font-size: 1.1em; text-align: center; }
+        #game-results-area { flex-direction: column; gap: 10px; font-size: 1.2em; }
+        #game-input.correct { box-shadow: 0 0 0 3px var(--correct-color) !important; }
+        #game-input.incorrect { box-shadow: 0 0 0 3px var(--incorrect-color) !important; }
+        #scan-results, #wl-steal-output, #mass-generate-output { background-color: #2a2a2a; border: 1px solid var(--border-color); border-radius: 6px; padding: 10px; max-height: 150px; overflow-y: auto; font-family: monospace; white-space: pre-wrap; font-size: 0.9em; }
+        .status-box.rate-limited { border-color: var(--rate-limit-color); box-shadow: 0 0 10px rgba(231, 76, 60, 0.4); }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    <div id="snow-container"></div>
+    <div id="login-container" class="card">
+        <h1>SAFIRECORD</h1>
+        <form id="login-form"><label for="token-input">Token</label><input type="password" id="token-input" placeholder="Enter your token..."><button type="submit" class="primary-button">Login</button></form>
+    </div>
+
+    <div id="app-container" class="card hidden">
+        <div class="tab-buttons">
+            <button class="tab-button active" data-tab="sender">Sender</button>
+            <button class="tab-button" data-tab="ap">AP</button>
+            <button class="tab-button" data-tab="autobeef">Auto Beefer</button>
+            <button class="tab-button" data-tab="ladder">Ladder</button>
+            <button class="tab-button" data-tab="wlsteal">WL Stealer</button>
+            <button class="tab-button" data-tab="generate">Generate</button>
+            <button class="tab-button" data-tab="beefcheck">Live Check</button>
+            <button class="tab-button" data-tab="game">Game</button>
+            <button class="tab-button" data-tab="profile">Profile</button>
+            <button class="tab-button" data-tab="imagelinks">Image Links</button>
+            <button class="tab-button" data-tab="options">Options</button>
+        </div>
+        <div class="app-header"><h2>SAFIRECORD</h2><button id="signout-button" class="secondary-button">Sign Out</button></div>
+        <div class="tab-content">
+            <div id="sender-tab" class="tab-pane active"><fieldset><legend>Destination</legend><label for="channel-id-input">Channel ID Slot</label><input type="text" id="channel-id-input" placeholder="Channel ID for sending..."><label for="user-id-input">User ID Slot (Optional Ping)</label><input type="text" id="user-id-input" placeholder="User ID to ping on send..."></fieldset><fieldset><legend>Message</legend><div class="slider-container" style="margin-bottom: 1rem;"><label for="sender-delay-slider">Send Batch Delay: <span id="sender-delay-value">0.5s</span></label><input type="range" id="sender-delay-slider" min="0.1" max="5.0" step="0.1" value="0.5"></div><label for="message-input">Message Sender (Press Enter to Add to Batch)</label><textarea id="message-input" rows="3" placeholder="Type messages..."></textarea></fieldset><div id="queue-status-container" class="status-box"><span id="queue-status-text"></span><span id="queue-count">Queue: 0</span><button id="clear-queue-button" class="secondary-button">Clear Queue</button></div></div>
+            <div id="ap-tab" class="tab-pane"><fieldset><legend>Image Link</legend><label for="ap-link-input">Image URL</label><input type="text" id="ap-link-input" placeholder="https://i.imgur.com/example.png"></fieldset><fieldset><legend>Settings</legend><div class="slider-container"><label for="ap-delay-slider">Send Delay: <span id="ap-delay-value">10s</span></label><input type="range" id="ap-delay-slider" min="0" max="14" value="8"><datalist id="ap-delay-ticks"><option value="0.1"></option><option value="1"></option><option value="2"></option><option value="3"></option><option value="4"></option><option value="5"></option><option value="6"></option><option value="7"></option><option value="8"></option><option value="9"></option><option value="10"></option><option value="15"></option><option value="20"></option><option value="25"></option><option value="30"></option></datalist></div></fieldset><div class="button-group"><button id="start-ap-button" class="primary-button" style="background-color: #2ecc71;">Start AP</button><button id="stop-ap-button" class="primary-button" style="background-color: #e74c3c;">Stop AP</button></div></div>
+            <div id="autobeef-tab" class="tab-pane"><fieldset><legend>Source File</legend><button id="load-file-button" class="secondary-button">Load .txt File</button><input type="file" id="file-input" accept=".txt" class="hidden"><div style="color: var(--text-secondary-color); text-align:center;" id="file-status">No file loaded.</div></fieldset><fieldset><legend>Settings</legend><div class="slider-container"><label for="autobeef-delay-slider">Message Delay: <span id="autobeef-delay-value">2.5s</span></label><input type="range" id="autobeef-delay-slider" min="0.1" max="10" step="0.1" value="2.5"></div><div class="flex-row"><input type="checkbox" id="non-repeating-checkbox" checked><label for="non-repeating-checkbox" style="margin: 0;">Non-repeating</label></div></fieldset><div class="button-group"><button id="start-autobeef-button" class="primary-button" style="background-color: #2ecc71;">Start</button><button id="stop-autobeef-button" class="primary-button" style="background-color: #e74c3c;">Stop</button></div></div>
+            <div id="ladder-tab" class="tab-pane"><fieldset><legend>Ladder Content</legend><label for="ladder-input">Words (one per line)</label><textarea id="ladder-input" rows="5" placeholder="UR
+SO
+ASS"></textarea></fieldset><fieldset><legend>Settings</legend><div class="slider-container"><label for="ladder-delay-slider">Ladder Delay: <span id="ladder-delay-value">0.1s</span></label><input type="range" id="ladder-delay-slider" min="0.1" max="2.0" step="0.1" value="0.1"></div></fieldset><button id="send-ladder-button" class="primary-button">Send Ladder</button></div>
+            <div id="wlsteal-tab" class="tab-pane"><fieldset><legend>Live Snipe Target</legend><label for="wl-steal-channel-id">Channel ID to Snipe</label><input type="text" id="wl-steal-channel-id" placeholder="Enter Channel ID..."><label for="wl-steal-user-id">User ID to Snipe</label><input type="text" id="wl-steal-user-id" placeholder="Enter User ID..."></fieldset><div class="button-group"><button id="start-wl-steal-button" class="primary-button" style="background-color: #9b59b6;">Start Snipe</button><button id="stop-wl-steal-button" class="primary-button" style="background-color: #e74c3c;">Stop Snipe</button></div><div id="wl-steal-status" class="status-box">Status: Idle</div><fieldset><legend>Sniped Sentences</legend><textarea id="wl-steal-output" rows="5" readonly></textarea></fieldset></div>
+            <div id="generate-tab" class="tab-pane"><fieldset><legend>Mass Sentence Generator</legend><p style="font-size: 0.9em; color: var(--text-secondary-color); margin: 0;">Generates 10,000 to 100,000 unique lines from internal templates. This may take a few seconds.</p><button id="mass-generate-button" class="primary-button">Generate 10k-100k Lines</button></fieldset><fieldset><legend>Output</legend><textarea id="mass-generate-output" rows="8" readonly placeholder="Generated sentences will appear here..."></textarea></fieldset></div>
+            <div id="beefcheck-tab" class="tab-pane"><fieldset><legend>Live Check Target</legend><label for="checker-channel-id">Channel ID to Check</label><input type="text" id="checker-channel-id" placeholder="Enter Channel ID..."><label for="checker-user-id">User ID to Check</label><input type="text" id="checker-user-id" placeholder="Enter User ID..."></fieldset><div class="button-group"><button id="start-scan-button" class="primary-button" style="background-color: #3498db;">Start Live Check</button><button id="stop-scan-button" class="primary-button" style="background-color: #e74c3c;">Stop Live Check</button></div><div id="scan-status" class="status-box">Status: Idle</div><fieldset><legend>Live Results</legend><div id="scan-results">Results will appear here...</div></fieldset></div>
+            <div id="game-tab" class="tab-pane"><button id="game-button" class="primary-button">Start Game</button><div id="game-prompt-display" class="hidden"></div><input type="text" id="game-input" class="hidden" placeholder="Type the sentence above and press Enter..."><div id="game-results-area" class="hidden"></div></div>
+            <div id="profile-tab" class="tab-pane"><fieldset><legend>Text Fields</legend><label for="profile-username">New Username</label><input type="text" id="profile-username" placeholder="Leave blank to keep current"><label for="profile-bio">Bio / About Me</label><textarea id="profile-bio" rows="4" placeholder="Leave blank to keep current"></textarea><label for="profile-pronouns">Pronouns</label><input type="text" id="profile-pronouns" placeholder="e.g., they/them"></fieldset><fieldset><legend>Image Fields</legend><div class="button-group"><button id="avatar-upload-button" class="secondary-button">Upload Avatar</button><button id="banner-upload-button" class="secondary-button">Upload Banner</button></div><input type="file" id="avatar-file-input" class="hidden" accept="image/png, image/jpeg, image/gif"><input type="file" id="banner-file-input" class="hidden" accept="image/png, image/jpeg, image/gif"></fieldset><fieldset><legend>Confirmation</legend><label for="profile-password">Current Password (Required for username change)</label><input type="password" id="profile-password" placeholder="Enter password..."></fieldset><button id="save-profile-button" class="primary-button">Save Profile Changes</button></div>
+            <div id="imagelinks-tab" class="tab-pane"><fieldset><legend>Image URLs</legend><label for="image-links-input">Image Links (one per line)</label><textarea id="image-links-input" rows="8" placeholder="https://i.imgur.com/example1.png
+https://i.imgur.com/example2.gif"></textarea></fieldset><fieldset><legend>Settings</legend><div class="slider-container"><label for="image-chance-slider">Image Attach Chance: <span id="image-chance-value">0%</span></label><input type="range" id="image-chance-slider" min="0" max="100" step="1" value="0"></div></fieldset></div>
+            <div id="options-tab" class="tab-pane"><fieldset><legend>Message Formatting</legend><div class="slider-container"><label for="autobold-slider">Auto Bold Chance: <span id="autobold-value">0%</span></label><input type="range" id="autobold-slider" min="0" max="100" step="1" value="0"></div></fieldset><fieldset><legend>Session</legend><label for="token-display">Saved Token</label><input type="text" id="token-display" readonly></fieldset></div>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const DOM = {
+            loginContainer: document.getElementById('login-container'), appContainer: document.getElementById('app-container'),
+            loginForm: document.getElementById('login-form'), tokenInput: document.getElementById('token-input'), tokenDisplay: document.getElementById('token-display'),
+            channelIdInput: document.getElementById('channel-id-input'), userIdInput: document.getElementById('user-id-input'), messageInput: document.getElementById('message-input'),
+            queueCountEl: document.getElementById('queue-count'), queueStatusContainer: document.getElementById('queue-status-container'), queueStatusText: document.getElementById('queue-status-text'),
+            tabButtons: document.querySelectorAll('.tab-button'), tabPanes: document.querySelectorAll('.tab-pane'),
+            senderDelaySlider: document.getElementById('sender-delay-slider'), senderDelayValue: document.getElementById('sender-delay-value'),
+            loadFileButton: document.getElementById('load-file-button'), fileInput: document.getElementById('file-input'), fileStatus: document.getElementById('file-status'),
+            autobeefDelaySlider: document.getElementById('autobeef-delay-slider'), autobeefDelayValue: document.getElementById('autobeef-delay-value'),
+            nonRepeatingCheckbox: document.getElementById('non-repeating-checkbox'), startAutobeefButton: document.getElementById('start-autobeef-button'), stopAutobeefButton: document.getElementById('stop-autobeef-button'),
+            autoboldSlider: document.getElementById('autobold-slider'), autoboldValue: document.getElementById('autobold-value'),
+            checkerChannelId: document.getElementById('checker-channel-id'), checkerUserId: document.getElementById('checker-user-id'),
+            startScanButton: document.getElementById('start-scan-button'), stopScanButton: document.getElementById('stop-scan-button'), scanStatus: document.getElementById('scan-status'), scanResults: document.getElementById('scan-results'),
+            wlGenButton: document.getElementById('wl-gen-button'), wlGenOutput: document.getElementById('wl-gen-output'),
+            imageLinksInput: document.getElementById('image-links-input'), imageChanceSlider: document.getElementById('image-chance-slider'), imageChanceValue: document.getElementById('image-chance-value'),
+            gameButton: document.getElementById('game-button'), gamePromptDisplay: document.getElementById('game-prompt-display'),
+            gameInput: document.getElementById('game-input'), gameResultsArea: document.getElementById('game-results-area'),
+            snowContainer: document.getElementById('snow-container'),
+            profileUsername: document.getElementById('profile-username'), profileBio: document.getElementById('profile-bio'),
+            profilePronouns: document.getElementById('profile-pronouns'), profilePassword: document.getElementById('profile-password'),
+            avatarUploadButton: document.getElementById('avatar-upload-button'), bannerUploadButton: document.getElementById('banner-upload-button'),
+            avatarFileInput: document.getElementById('avatar-file-input'), bannerFileInput: document.getElementById('banner-file-input'),
+            saveProfileButton: document.getElementById('save-profile-button'),
+            ladderInput: document.getElementById('ladder-input'), ladderDelaySlider: document.getElementById('ladder-delay-slider'),
+            ladderDelayValue: document.getElementById('ladder-delay-value'), sendLadderButton: document.getElementById('send-ladder-button'),
+            apLinkInput: document.getElementById('ap-link-input'), apDelaySlider: document.getElementById('ap-delay-slider'),
+            apDelayValue: document.getElementById('ap-delay-value'), startApButton: document.getElementById('start-ap-button'), stopApButton: document.getElementById('stop-ap-button'),
+            wlStealChannelId: document.getElementById('wl-steal-channel-id'), wlStealUserId: document.getElementById('wl-steal-user-id'),
+            startWlStealButton: document.getElementById('start-wl-steal-button'), stopWlStealButton: document.getElementById('stop-wl-steal-button'),
+            wlStealStatus: document.getElementById('wl-steal-status'), wlStealOutput: document.getElementById('wl-steal-output'),
+            massGenerateButton: document.getElementById('mass-generate-button'), massGenerateOutput: document.getElementById('mass-generate-output'),
+        };
+
+        let state = {
+            messageQueue: [], senderBuffer: [], autoBeefLines: [], sentBeefLines: new Set(),
+            isProcessingQueue: false, typingTimeout: null, autoBeefInterval: null, apInterval: null, batchSendTimeout: null, isScanRunning: false, isWlStealing: false, imageLinkIndex: 0,
+            isGameRunning: false, gameSentences: [], currentSentenceIndex: 0, gameStartTime: 0, totalCharsTyped: 0, totalCorrectChars: 0,
+            newAvatarBase64: null, newBannerBase64: null, rateLimitTimer: null, lastLiveMessageId: null
+        };
+        
+        const DISCORD_API_BASE = 'https://discord.com/api/v9';
+        async function apiFetch(url, options = {}) {
+            const token = localStorage.getItem('safirecord-token'); if (!token) throw new Error("Not logged in.");
+            options.headers = { ...options.headers, 'Authorization': token, 'Content-Type': 'application/json' };
+            return await fetch(url, options);
+        }
+
+        function updateUI() { DOM.queueCountEl.textContent = `Queue: ${state.messageQueue.length}`; DOM.queueStatusContainer.classList.toggle('rate-limited', state.messageQueue.some(job => job.isRateLimited)); }
+
+        async function processQueue() {
+            if (state.isProcessingQueue || state.messageQueue.length === 0) return; state.isProcessingQueue = true;
+            const job = state.messageQueue[0]; if (job.isRateLimited) { state.isProcessingQueue = false; return; }
+            try {
+                const response = await apiFetch(`${DISCORD_API_BASE}/channels/${job.channelId}/messages`, { method: 'POST', body: JSON.stringify({ content: job.content }) });
+                if (response.ok) { state.messageQueue.shift();
+                } else {
+                    const errorData = await response.json();
+                    if (response.status === 429) {
+                        job.isRateLimited = true; updateUI(); const retryAfter = (errorData.retry_after || 2);
+                        let countdown = retryAfter;
+                        DOM.queueStatusText.textContent = `Rate Limited: Retrying in ${countdown.toFixed(1)}s...`;
+                        if(state.rateLimitTimer) clearInterval(state.rateLimitTimer);
+                        state.rateLimitTimer = setInterval(() => { countdown -= 0.1; if(countdown > 0) DOM.queueStatusText.textContent = `Rate Limited: Retrying in ${countdown.toFixed(1)}s...`; }, 100);
+                        setTimeout(() => { job.isRateLimited = false; if(state.rateLimitTimer) clearInterval(state.rateLimitTimer); DOM.queueStatusText.textContent = ''; updateUI(); processQueue(); }, retryAfter * 1000);
+                        state.isProcessingQueue = false; return;
+                    } else { alert(`Message Failed!\n\nError: ${response.status} (${errorData.message || 'Unknown error.'})`); state.messageQueue.shift(); }
+                }
+            } catch (e) { alert(`Network Error: Could not reach Discord.\n\n${e.message}`); state.messageQueue.shift(); }
+            state.isProcessingQueue = false; updateUI();
+            if (state.messageQueue.length > 0) processQueue();
+        }
+
+        function assembleFinalMessage(rawContent, optionalPing = '') {
+            let finalContent = rawContent;
+            if (Math.random() * 100 < parseInt(DOM.autoboldSlider.value)) finalContent = `# ${finalContent}`;
+            const linksText = DOM.imageLinksInput.value.trim();
+            if (linksText && Math.random() * 100 < parseInt(DOM.imageChanceSlider.value)) {
+                const links = linksText.split('\n').map(l => l.trim()).filter(Boolean);
+                if (links.length > 0) { finalContent += ` ${links[state.imageLinkIndex++ % links.length]}`; }
+            }
+            if (optionalPing) finalContent += ` <@${optionalPing}>`;
+            return finalContent;
+        }
+
+        function addMessageToQueue(channelId, finalContent) {
+            state.messageQueue.push({ channelId, content: finalContent, isRateLimited: false }); updateUI();
+            if (!state.isProcessingQueue) processQueue();
+        }
+        
+        function submitManualMessage() {
+            const channelId = DOM.channelIdInput.value.trim(), content = DOM.messageInput.value.trim(), userIdToPing = DOM.userIdInput.value.trim();
+            if (!channelId || !content) return;
+            const finalContent = assembleFinalMessage(content, userIdToPing && /^\d+$/.test(userIdToPing) ? userIdToPing : '');
+            DOM.messageInput.value = '';
+            state.senderBuffer.push({ channelId, finalContent });
+            if (!state.batchSendTimeout) {
+                state.batchSendTimeout = setTimeout(() => {
+                    state.senderBuffer.forEach(job => addMessageToQueue(job.channelId, job.finalContent));
+                    state.senderBuffer = []; state.batchSendTimeout = null;
+                }, parseFloat(DOM.senderDelaySlider.value) * 1000);
+            }
+        }
+
+        function startAutoBeefer() {
+            if (state.autoBeefInterval) return;
+            if (state.autoBeefLines.length === 0) { alert("No file loaded."); return; }
+            const channelId = DOM.channelIdInput.value.trim(); if (!channelId) { alert("Set a Channel ID in the Sender tab."); return; }
+            stopAutoBeefer();
+            state.autoBeefInterval = setInterval(() => {
+                let line;
+                if (DOM.nonRepeatingCheckbox.checked) {
+                    if (state.sentBeefLines.size >= Math.floor(state.autoBeefLines.length * 0.75)) state.sentBeefLines.clear();
+                    let available = state.autoBeefLines.filter(l => !state.sentBeefLines.has(l));
+                    if (available.length === 0) { state.sentBeefLines.clear(); available = state.autoBeefLines; }
+                    line = available[Math.floor(Math.random() * available.length)]; state.sentBeefLines.add(line);
+                } else { line = state.autoBeefLines[Math.floor(Math.random() * state.autoBeefLines.length)]; }
+                if (line) addMessageToQueue(channelId, assembleFinalMessage(line));
+            }, parseFloat(DOM.autobeefDelaySlider.value) * 1000);
+        }
+        function stopAutoBeefer() { if (state.autoBeefInterval) { clearInterval(state.autoBeefInterval); state.autoBeefInterval = null; } }
+        
+        const apDelayValues = [0.1, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20, 25, 30];
+        function startAP() {
+            if (state.apInterval) return;
+            const link = DOM.apLinkInput.value.trim(); if (!link) { alert("Please enter an image link for AP."); return; }
+            const channelId = DOM.channelIdInput.value.trim(); if (!channelId) { alert("Set a Channel ID in the Sender tab."); return; }
+            stopAP();
+            const sendAP = () => addMessageToQueue(channelId, assembleFinalMessage(link));
+            const delay = apDelayValues[parseInt(DOM.apDelaySlider.value)] * 1000;
+            sendAP(); state.apInterval = setInterval(sendAP, delay);
+        }
+        function stopAP() { if (state.apInterval) { clearInterval(state.apInterval); state.apInterval = null; } }
+        
+        async function sendLadder() {
+            const channelId = DOM.channelIdInput.value.trim(); if (!channelId) { alert("Set a Channel ID in the Sender tab."); return; }
+            const ladderWords = DOM.ladderInput.value.split('\n').map(l => l.trim()).filter(Boolean);
+            if (ladderWords.length === 0) { alert("No words in the ladder box."); return; }
+            const delay = parseFloat(DOM.ladderDelaySlider.value) * 1000;
+            for (let i = 0; i < ladderWords.length; i++) {
+                addMessageToQueue(channelId, assembleFinalMessage(ladderWords[i]));
+                if (i < ladderWords.length - 1) { await new Promise(resolve => setTimeout(resolve, delay)); }
+            }
+        }
+        
+        async function startWlSteal() {
+            if (state.isWlStealing) return;
+            const channelId = DOM.wlStealChannelId.value.trim(), userId = DOM.wlStealUserId.value.trim();
+            if (!channelId || !userId) { alert("Please fill all WL Stealer fields."); return; }
+            state.isWlStealing = true; DOM.wlStealStatus.textContent = "Status: Monitoring for new messages..."; DOM.wlStealOutput.value = "";
+            let collectedSentences = new Set(); state.lastLiveMessageId = null;
+            const poll = async () => {
+                if (!state.isWlStealing) { DOM.wlStealStatus.textContent = "Status: Snipe stopped by user."; return; }
+                try {
+                    const url = `${DISCORD_API_BASE}/channels/${channelId}/messages?limit=50` + (state.lastLiveMessageId ? `&after=${state.lastLiveMessageId}` : '');
+                    const response = await apiFetch(url, { method: 'GET' });
+                    if (!response.ok) { const errData = await response.json().catch(() => ({})); throw new Error(`API error ${response.status}: ${errData.message || 'Check permissions.'}`); }
+                    const messages = await response.json();
+                    if (messages.length > 0) {
+                        state.lastLiveMessageId = messages[0].id;
+                        messages.filter(m => m.author.id === userId && m.content).forEach(m => { const sentence = m.content.trim(); if (sentence) collectedSentences.add(sentence); });
+                        DOM.wlStealOutput.value = Array.from(collectedSentences).join('\n');
+                        DOM.wlStealStatus.textContent = `Status: Monitoring... | Found: ${collectedSentences.size}`;
+                    }
+                } catch(e) { DOM.wlStealStatus.textContent = `Error: ${e.message}. Stopping.`; state.isWlStealing = false; }
+                if(state.isWlStealing) setTimeout(poll, 3000);
+            };
+            poll();
+        }
+        function stopWlSteal() { state.isWlStealing = false; }
+
+        function massGenerate() {
+            DOM.massGenerateOutput.value = "Generating... (This may take a moment)";
+            const templates = [ "ur a {adj} {noun}", "ur my {adj} {noun}", "retarded ass {adj} {noun}", "u got hoed by a {adj} {noun}", "i own ur {adj} {noun}", "yes ur my fucking {noun}", "u have 0 {noun}", "u lack {noun}", "shut the fuck up {adj} {noun}", "i walk you {adj} {noun}", "ur not built for this {noun}", "theres levels to this shit ur a {adj} {noun}" ];
+            const adjectives = ["fucking", "retarded", "cuck ass", "corny", "lame", "awkward", "slow", "weak", "trash", "shitty", "ugly", "poor", "broke", "no name", "unknown", "failed", "dork ass", "gay", "emo", "sad", "pathetic", "useless", "worthless"];
+            const nouns = ["loser", "retard", "cuck", "moron", "nigga", "faggot", "queer", "bitch", "son", "jr", "junior", "whore", "slut", "pedo", "pedophile", "reject", "clone", "victim", "slave", "peon", "minion", "dork", "nerd", "gimp", "nonce", "creep"];
+            const targetCount = 10000 + Math.floor(Math.random() * 90001);
+            let lines = new Set();
+            setTimeout(() => {
+                while (lines.size < targetCount) {
+                    let template = templates[Math.floor(Math.random() * templates.length)];
+                    let line = template.replace(/{adj}/g, () => adjectives[Math.floor(Math.random() * adjectives.length)]).replace('{noun}', () => nouns[Math.floor(Math.random() * nouns.length)]);
+                    lines.add(line);
+                }
+                DOM.massGenerateOutput.value = Array.from(lines).join('\n');
+            }, 50);
+        }
+
+        async function startBeefCheck() {
+            if (state.isScanRunning) return; const channelId = DOM.checkerChannelId.value.trim(), userId = DOM.checkerUserId.value.trim();
+            if (!channelId || !userId) { alert("Please fill all Live Check fields."); return; }
+            state.isScanRunning = true; DOM.scanStatus.textContent = "Status: Monitoring for new messages..."; DOM.scanResults.textContent = "";
+            let sentenceCounts = {}; state.lastLiveMessageId = null;
+            const poll = async () => {
+                if (!state.isScanRunning) { DOM.scanStatus.textContent = "Status: Check stopped by user."; return; }
+                try {
+                    const url = `${DISCORD_API_BASE}/channels/${channelId}/messages?limit=50` + (state.lastLiveMessageId ? `&after=${state.lastLiveMessageId}` : '');
+                    const response = await apiFetch(url, { method: 'GET' });
+                    if (!response.ok) throw new Error(`API error ${response.status}.`);
+                    const messages = await response.json();
+                    if (messages.length > 0) {
+                        state.lastLiveMessageId = messages[0].id;
+                        messages.filter(m => m.author.id === userId && m.content).forEach(m => {
+                            const sentence = m.content.trim().toLowerCase();
+                            if(sentence) sentenceCounts[sentence] = (sentenceCounts[sentence] || 0) + 1;
+                        });
+                        const sortedSentences = Object.entries(sentenceCounts).filter(([, count]) => count > 1).sort((a, b) => b[1] - a[1]);
+                        DOM.scanResults.textContent = sortedSentences.map(([sentence, count]) => `Count [${count}]: "${sentence}"`).join('\n') || "No repeated sentences yet...";
+                    }
+                } catch(e) { DOM.scanStatus.textContent = `Error: ${e.message}. Stopping.`; state.isScanRunning = false; }
+                if (state.isScanRunning) setTimeout(poll, 3000);
+            };
+            poll();
+        }
+        function stopBeefCheck() { if (state.isScanRunning) state.isScanRunning = false; }
+        function toggleGame() { if (state.isGameRunning) endGame(); else startGame(); }
+        function startGame() {
+            state.isGameRunning = true; state.currentSentenceIndex = 0; state.totalCharsTyped = 0; state.totalCorrectChars = 0;
+            state.gameSentences = ['ur a fucking loser', 'ur a dork nigga', 'ur a fucking loser cuck', 'ur a pedo', 'ur trash as fuck', 'ur awkward as fuck','retarded ass fucking loser', 'awkward ass little nerd', 'ur a fucking loser and ur soft as fuck', 'dork ass loser ur mad as fuck','cuck ass nigga ur a fucking dork', 'u slave for me retard', 'ur slow as fuck', 'ur weak as fuck', 'ur ugly as fuc k','retarded ass cuck', 'ugly little loser', 'cuck ur a fucking loser ur a pedo', 'and ur my bitch'].sort(() => 0.5 - Math.random());
+            DOM.gameButton.textContent = 'End Game'; DOM.gameButton.style.backgroundColor = '#e74c3c';
+            DOM.gameResultsArea.classList.add('hidden'); DOM.gamePromptDisplay.classList.remove('hidden'); DOM.gameInput.classList.remove('hidden');
+            nextGameSentence();
+        }
+        function nextGameSentence() { if (state.currentSentenceIndex >= 8) { endGame(); return; } if (state.currentSentenceIndex === 0) state.gameStartTime = Date.now(); DOM.gamePromptDisplay.textContent = state.gameSentences[state.currentSentenceIndex]; DOM.gameInput.value = ''; DOM.gameInput.focus(); DOM.gameInput.className = ''; }
+        function endGame() {
+            if (!state.isGameRunning) return; state.isGameRunning = false;
+            if (state.totalCharsTyped > 0) {
+                const elapsedSeconds = (Date.now() - state.gameStartTime) / 1000;
+                const wpm = elapsedSeconds > 0 ? (state.totalCharsTyped / 5) / (elapsedSeconds / 60) : 0;
+                const accuracy = state.totalCharsTyped > 0 ? (state.totalCorrectChars / state.totalCharsTyped) * 100 : 0;
+                DOM.gameResultsArea.innerHTML = `<div>WPM: <strong>${wpm.toFixed(1)}</strong></div><div>Accuracy: <strong>${accuracy.toFixed(1)}%</strong></div>`;
+            } else { DOM.gameResultsArea.innerHTML = "<div>Game ended early.</div>"; }
+            DOM.gamePromptDisplay.classList.add('hidden'); DOM.gameInput.classList.add('hidden');
+            DOM.gameResultsArea.classList.remove('hidden'); DOM.gameButton.textContent = 'Start Game'; DOM.gameButton.style.backgroundColor = '';
+        }
+        async function saveProfileChanges() {
+            const payload = {}; const newUsername = DOM.profileUsername.value.trim(); const newBio = DOM.profileBio.value.trim(); const newPronouns = DOM.profilePronouns.value.trim(); const password = DOM.profilePassword.value;
+            if(newUsername) { if(!password) { alert("Password is required to change username."); return; } payload.username = newUsername; payload.password = password; }
+            if(newBio) payload.bio = newBio; if(newPronouns) payload.pronouns = newPronouns; if(state.newAvatarBase64) payload.avatar = state.newAvatarBase64; if(state.newBannerBase64) payload.banner = state.newBannerBase64;
+            if (Object.keys(payload).length === 0) { alert("No changes to save."); return; }
+            try {
+                const response = await apiFetch(`${DISCORD_API_BASE}/users/@me`, { method: 'PATCH', body: JSON.stringify(payload) });
+                const data = await response.json();
+                if (response.ok) {
+                    alert("Profile updated successfully!"); state.newAvatarBase64 = null; state.newBannerBase64 = null;
+                    DOM.avatarUploadButton.textContent = 'Upload Avatar'; DOM.bannerUploadButton.textContent = 'Upload Banner';
+                    DOM.profileUsername.value = ''; DOM.profileBio.value = ''; DOM.profilePronouns.value = ''; DOM.profilePassword.value = '';
+                } else { const errorMessage = data.errors ? JSON.stringify(data.errors) : (data.message || "Unknown error."); alert(`Failed to update profile: ${errorMessage}`); }
+            } catch (e) { alert(`Network error during profile update: ${e.message}`); }
+        }
+        function handleImageUpload(file, type) { const reader = new FileReader(); reader.onload = (e) => { if (type === 'avatar') { state.newAvatarBase64 = e.target.result; DOM.avatarUploadButton.textContent = "Avatar Ready!"; } else if (type === 'banner') { state.newBannerBase64 = e.target.result; DOM.bannerUploadButton.textContent = "Banner Ready!"; } }; reader.readAsDataURL(file); }
+        function createSnowflakes() { for (let i = 0; i < 50; i++) { const flake = document.createElement('div'); flake.className = 'snowflake'; const size = Math.random() * 3 + 1; flake.style.width = `${size}px`; flake.style.height = `${size}px`; flake.style.left = `${Math.random() * 100}vw`; flake.style.animationDuration = `${Math.random() * 5 + 5}s`; flake.style.animationDelay = `${Math.random() * 5}s`; flake.style.opacity = `${Math.random() * 0.6 + 0.2}`; DOM.snowContainer.appendChild(flake); } }
+
+        const showAppView = (token) => { DOM.tokenDisplay.value = '********' + token.slice(-4); DOM.loginContainer.classList.add('hidden'); DOM.appContainer.classList.remove('hidden'); };
+        const showLoginView = () => { DOM.appContainer.classList.add('hidden'); DOM.loginContainer.classList.remove('hidden'); };
+        const handleLogin = (e) => { e.preventDefault(); const tokenValue = DOM.tokenInput.value.trim(); if (tokenValue) { localStorage.setItem('safirecord-token', tokenValue); showAppView(tokenValue); } };
+        function resetAllSending() { stopAutoBeefer(); stopAP(); stopBeefCheck(); stopWlSteal(); state.messageQueue = []; if(state.rateLimitTimer) clearInterval(state.rateLimitTimer); DOM.queueStatusText.textContent = ''; if (state.batchSendTimeout) clearTimeout(state.batchSendTimeout); state.batchSendTimeout = null; state.senderBuffer = []; updateUI(); }
+        const handleSignOut = () => { resetAllSending(); endGame(); localStorage.removeItem('safirecord-token'); showLoginView(); };
+
+        DOM.loginForm.addEventListener('submit', handleLogin);
+        DOM.gameButton.addEventListener('click', toggleGame);
+        DOM.gameInput.addEventListener('keydown', (e) => { if (!state.isGameRunning || e.key !== 'Enter') return; const typedText = DOM.gameInput.value.toLowerCase(); const promptText = DOM.gamePromptDisplay.textContent.toLowerCase(); state.totalCharsTyped += promptText.length; for(let i = 0; i < promptText.length; i++) { if (typedText[i] === promptText[i]) state.totalCorrectChars++; } state.currentSentenceIndex++; nextGameSentence(); });
+        DOM.gameInput.addEventListener('input', () => { if (!state.isGameRunning) return; const typedText = DOM.gameInput.value.toLowerCase(); const promptText = DOM.gamePromptDisplay.textContent.toLowerCase(); DOM.gameInput.className = promptText.startsWith(typedText) ? 'correct' : 'incorrect'; });
+        DOM.tabButtons.forEach(button => button.addEventListener('click', () => { DOM.tabButtons.forEach(btn => btn.classList.remove('active')); DOM.tabPanes.forEach(pane => pane.classList.remove('active')); button.classList.add('active'); document.getElementById(`${button.dataset.tab}-tab`).classList.add('active'); }));
+        document.getElementById('signout-button').addEventListener('click', handleSignOut);
+        DOM.messageInput.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submitManualMessage(); }});
+        DOM.messageInput.addEventListener('input', () => { clearTimeout(state.typingTimeout); state.typingTimeout = setTimeout(() => { try { apiFetch(`${DISCORD_API_BASE}/channels/${DOM.channelIdInput.value.trim()}/typing`, { method: 'POST' }); } catch(e) {} }, 2000); });
+        DOM.senderDelaySlider.addEventListener('input', () => DOM.senderDelayValue.textContent = `${parseFloat(DOM.senderDelaySlider.value).toFixed(1)}s`);
+        DOM.autobeefDelaySlider.addEventListener('input', () => DOM.autobeefDelayValue.textContent = `${parseFloat(DOM.autobeefDelaySlider.value).toFixed(1)}s`);
+        DOM.ladderDelaySlider.addEventListener('input', () => DOM.ladderDelayValue.textContent = `${parseFloat(DOM.ladderDelaySlider.value).toFixed(1)}s`);
+        DOM.apDelaySlider.addEventListener('input', () => { DOM.apDelayValue.textContent = `${apDelayValues[parseInt(DOM.apDelaySlider.value)]}s`; });
+        DOM.loadFileButton.addEventListener('click', () => DOM.fileInput.click());
+        DOM.fileInput.addEventListener('change', (e) => { const file = e.target.files[0]; if (file) { const reader = new FileReader(); reader.onload = (re) => { state.autoBeefLines = re.target.result.split('\n').map(l => l.trim()).filter(Boolean); DOM.fileStatus.textContent = `${state.autoBeefLines.length} lines loaded.`; state.sentBeefLines.clear(); }; reader.readAsText(file); } });
+        DOM.startAutobeefButton.addEventListener('click', startAutoBeefer); DOM.stopAutobeefButton.addEventListener('click', stopAutoBeefer);
+        DOM.startApButton.addEventListener('click', startAP); DOM.stopApButton.addEventListener('click', stopAP);
+        DOM.startWlStealButton.addEventListener('click', startWlSteal); DOM.stopWlStealButton.addEventListener('click', stopWlSteal);
+        DOM.sendLadderButton.addEventListener('click', sendLadder);
+        DOM.startScanButton.addEventListener('click', startBeefCheck); DOM.stopScanButton.addEventListener('click', stopBeefCheck);
+        DOM.saveProfileButton.addEventListener('click', saveProfileChanges);
+        DOM.avatarUploadButton.addEventListener('click', () => DOM.avatarFileInput.click()); DOM.bannerUploadButton.addEventListener('click', () => DOM.bannerFileInput.click());
+        DOM.avatarFileInput.addEventListener('change', (e) => handleImageUpload(e.target.files[0], 'avatar'));
+        DOM.bannerFileInput.addEventListener('change', (e) => handleImageUpload(e.target.files[0], 'banner'));
+        DOM.autoboldSlider.addEventListener('input', () => DOM.autoboldValue.textContent = `${DOM.autoboldSlider.value}%`);
+        DOM.imageChanceSlider.addEventListener('input', () => DOM.imageChanceValue.textContent = `${DOM.imageChanceSlider.value}%`);
+        document.getElementById('clear-queue-button').addEventListener('click', resetAllSending);
+        DOM.massGenerateButton.addEventListener('click', massGenerate);
+        DOM.wlGenButton.addEventListener('click', () => {
+            const templates = [ "UR A {adj} {noun}", "UR MY {adj} {noun}", "UR SO {adj} AND {adj}", "{adj} ASS {noun}" ]; const adjectives = ["SILLY", "GOOFY", "CLUMSY", "AWKWARD", "WEAK", "SLOW"]; const nouns = ["GOOSE", "DUCK", "CLOWN", "JUNIOR", "PEON", "NOBODY"];
+            const amount = parseInt(DOM.wlGenAmount.value); if (isNaN(amount) || amount < 1) return; let lines = new Set(); DOM.wlGenOutput.value = "Generating...";
+            setTimeout(() => { for (let i = 0; lines.size < amount && i < amount * 5; i++) { let template = templates[Math.floor(Math.random() * templates.length)]; lines.add(template.replace(/{adj}/g, () => adjectives[Math.floor(Math.random() * adjectives.length)]).replace('{noun}', () => nouns[Math.floor(Math.random() * nouns.length)]).toUpperCase()); } DOM.wlGenOutput.value = Array.from(lines).join('\n'); }, 10);
+        });
+        
+        const savedToken = localStorage.getItem('safirecord-token');
+        if (savedToken) showAppView(savedToken); else showLoginView();
+        updateUI(); createSnowflakes();
+    });
+    </script>
+</body>
+</html>
